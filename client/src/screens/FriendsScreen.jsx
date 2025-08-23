@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 const FriendsScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
   const [friends, setFriends] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
 
@@ -16,6 +17,17 @@ const FriendsScreen = ({ navigation }) => {
       setFriends(res.data);
     } catch (err) {
       console.warn('loadFriends', err.message || err);
+    }
+  };
+
+  const loadFriendRequests = async () => {
+    try {
+      const res = await api.get('/friends/requests');
+      console.log('Friend requests response:', res.data);
+      // Backend returns { incoming, outgoing } - we want incoming requests
+      setFriendRequests(res.data.incoming || []);
+    } catch (err) {
+      console.error('loadFriendRequests error:', err.response?.data || err.message || err);
     }
   };
 
@@ -37,7 +49,70 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => { loadFriends(); }, []);
+  const acceptRequest = async (requestId) => {
+    try {
+      console.log('Accepting request:', requestId);
+      const response = await api.post('/friends/request/action', { requestId, action: 'accept' });
+      console.log('Accept response:', response.data);
+      Alert.alert('Friend request accepted');
+      // Refresh both lists
+      loadFriends();
+      loadFriendRequests();
+    } catch (err) {
+      console.error('Accept request error:', err.response?.data || err.message);
+      Alert.alert('Error', err.response?.data?.message || err.message || 'Error accepting request');
+    }
+  };
+
+  const declineRequest = async (requestId) => {
+    try {
+      console.log('Declining request:', requestId);
+      const response = await api.post('/friends/request/action', { requestId, action: 'reject' });
+      console.log('Decline response:', response.data);
+      Alert.alert('Friend request declined');
+      loadFriendRequests();
+    } catch (err) {
+      console.error('Decline request error:', err.response?.data || err.message);
+      Alert.alert('Error', err.response?.data?.message || err.message || 'Error declining request');
+    }
+  };
+
+  useEffect(() => { 
+    loadFriends();
+    loadFriendRequests();
+  }, []);
+
+  const renderFriendRequest = ({ item }) => {
+    console.log('Rendering friend request item:', item);
+    
+    // Try different ways to get the user name
+    const userName = item.from?.name || 
+                    item.fromUser?.name || 
+                    item.sender?.name || 
+                    `User ${item.from || 'Unknown'}`;
+    
+    return (
+      <View style={styles.requestRow}>
+        <View>
+          <Text style={styles.name}>{userName}</Text>
+        </View>
+        <View style={styles.requestButtons}>
+          <TouchableOpacity 
+            style={[styles.btn, styles.acceptBtn]} 
+            onPress={() => acceptRequest(item._id)}
+          >
+            <Text style={{ color: '#fff' }}>Accept</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.btn, styles.declineBtn]} 
+            onPress={() => declineRequest(item._id)}
+          >
+            <Text style={{ color: '#fff' }}>Decline</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -48,13 +123,19 @@ const FriendsScreen = ({ navigation }) => {
       </View>
 
       <View style={{ marginBottom: 10 }}>
-        <TextInput placeholder="Search name or email" value={query} onChangeText={setQuery} style={styles.input} />
+        <TextInput 
+          placeholder="Search name or email" 
+          placeholderTextColor="#fff" 
+          value={query} 
+          onChangeText={setQuery} 
+          style={styles.input} 
+        />
         <Button title="Search" onPress={search} />
       </View>
 
       {results.length > 0 && (
         <>
-          <Text style={styles.heading}>Results</Text>
+          <Text style={styles.heading}>Search Results</Text>
           <FlatList
             data={results}
             keyExtractor={(i) => i._id}
@@ -66,11 +147,24 @@ const FriendsScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
             )}
+            style={{ maxHeight: 150, marginBottom: 10 }}
           />
         </>
       )}
 
-      <Text style={styles.heading}>Friends</Text>
+      {friendRequests.length > 0 && (
+        <>
+          <Text style={styles.heading}>Friend Requests ({friendRequests.length})</Text>
+          <FlatList
+            data={friendRequests}
+            keyExtractor={(i) => i._id}
+            renderItem={renderFriendRequest}
+            style={{ maxHeight: 200, marginBottom: 10 }}
+          />
+        </>
+      )}
+
+      <Text style={styles.heading}>Friends ({friends.length})</Text>
       <FlatList
         data={friends}
         keyExtractor={(i) => i._id}
@@ -89,9 +183,43 @@ const styles = StyleSheet.create({
   welcome: { color: '#fff', fontSize: 16, marginBottom: 8 },
   input: { backgroundColor: '#121621', color: '#fff', padding: 10, borderRadius: 8 },
   heading: { color: '#fff', fontSize: 16, marginTop: 12, marginBottom: 6 },
-  row: { backgroundColor: '#121621', padding: 12, borderRadius: 8, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { color: '#fff' },
-  btn: { backgroundColor: '#4f8cff', padding: 8, borderRadius: 8 }
+  row: { 
+    backgroundColor: '#121621', 
+    padding: 12, 
+    borderRadius: 8, 
+    marginBottom: 8, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
+  },
+  requestRow: {
+    backgroundColor: '#121621',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderLeftWidth: 3,
+    borderLeftColor: '#4f8cff'
+  },
+  name: { color: '#fff', flex: 1 },
+  btn: { backgroundColor: '#4f8cff', padding: 8, borderRadius: 8 },
+  requestButtons: {
+    flexDirection: 'row',
+    gap: 8
+  },
+  acceptBtn: {
+    backgroundColor: '#4caf50'
+  },
+  requestInfo: { 
+    color: '#aaa', 
+    fontSize: 12, 
+    marginTop: 2 
+  },
+  declineBtn: {
+    backgroundColor: '#f44336'
+  }
 });
 
 export default FriendsScreen;

@@ -26,9 +26,9 @@ const RegisterScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create account</Text>
-      <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
-      <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} autoCapitalize="none" keyboardType="email-address" />
-      <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
+      <TextInput placeholder="Name" placeholderTextColor="#fff" value={name} onChangeText={setName} style={styles.input} />
+      <TextInput placeholder="Email" placeholderTextColor="#fff" value={email} onChangeText={setEmail} style={styles.input} autoCapitalize="none" keyboardType="email-address" />
+      <TextInput placeholder="Password" placeholderTextColor="#fff" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
       <Button title="Register" onPress={onRegister} />
       <TouchableOpacity style={styles.link} onPress={() => navigation.navigate('Login')}>
         <Text style={{ color: '#4f8cff' }}>Already have an account? Login</Text>

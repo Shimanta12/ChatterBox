@@ -25,8 +25,8 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>ChatterBox</Text>
-      <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} autoCapitalize="none" keyboardType="email-address" />
-      <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
+      <TextInput placeholder="Email" placeholderTextColor="#fff" value={email} onChangeText={setEmail} style={styles.input} autoCapitalize="none" keyboardType="email-address" />
+      <TextInput placeholder="Password" placeholderTextColor="#fff" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
       <Button title="Login" onPress={onLogin} />
       <TouchableOpacity style={styles.link} onPress={() => navigation.navigate('Register')}>
         <Text style={{ color: '#4f8cff' }}>Don't have an account? Register</Text>
