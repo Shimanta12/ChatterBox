@@ -24,7 +24,6 @@ const ProfileScreen = () => {
       <Text style={styles.heading}>Profile</Text>
       <Text>Email: {user?.email}</Text>
       <TextInput value={name} placeholderTextColor="#fff" onChangeText={setName} placeholder="Name" style={styles.input} />
-      <TextInput value={avatar} placeholderTextColor="#fff" onChangeText={setAvatar} placeholder="Avatar URL" style={styles.input} />
       <TextInput value={password} placeholderTextColor="#fff" onChangeText={setPassword} placeholder="New Password" secureTextEntry style={styles.input} />
       <Button title="Save" onPress={updateProfile} />
     </View>
