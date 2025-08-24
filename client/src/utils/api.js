@@ -10,6 +10,7 @@ api.interceptors.request.use(async (config) => {
     const token = await AsyncStorage.getItem('token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
   } catch (e) {
+    // error handlers will be added here with fallbacks.
     console.log(e)
   }
   return config;
