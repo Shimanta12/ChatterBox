@@ -1,4 +1,3 @@
-// src/routes/userRoutes.js
 import { Router } from 'express';
 import { auth } from '../middleware/auth.js';
 import { me, updateProfile, searchUsers } from '../controllers/userController.js';

@@ -1,4 +1,3 @@
-// src/screens/LoginScreen.jsx
 import React, { useState } from 'react';
 import { View, TextInput, Button, Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import api from '../utils/api';
@@ -12,7 +11,6 @@ const LoginScreen = ({ navigation }) => {
   const onLogin = async () => {
     try {
       const res = await api.post('/auth/login', { email, password });
-      // backend returns { token, user }
       const token = res.data.token;
       const userObj = res.data.user ?? res.data;
       if (!token) throw new Error('No token in response');

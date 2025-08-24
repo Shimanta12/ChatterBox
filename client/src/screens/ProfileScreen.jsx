@@ -1,4 +1,3 @@
-// src/screens/ProfileScreen.jsx
 import React, { useContext, useState, useEffect } from 'react';
 import { View, TextInput, Button, Alert, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';

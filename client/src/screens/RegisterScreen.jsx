@@ -1,4 +1,3 @@
-// src/screens/RegisterScreen.jsx
 import React, { useState } from 'react';
 import { View, TextInput, Button, Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import api from '../utils/api';
@@ -13,7 +12,6 @@ const RegisterScreen = ({ navigation }) => {
   const onRegister = async () => {
     try {
       const res = await api.post('/auth/register', { name, email, password });
-      // backend returns { token, user }
       const token = res.data.token;
       const userObj = res.data.user ?? res.data;
       if (!token) throw new Error('No token in response');

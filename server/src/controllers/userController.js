@@ -1,4 +1,3 @@
-// src/controllers/userController.js
 import User from '../models/User.js';
 
 export const me = async (req, res) => {

@@ -1,4 +1,3 @@
-// src/screens/FriendsScreen.jsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Button, Alert } from 'react-native';
 import api from '../utils/api';
@@ -24,7 +23,6 @@ const FriendsScreen = ({ navigation }) => {
     try {
       const res = await api.get('/friends/requests');
       console.log('Friend requests response:', res.data);
-      // Backend returns { incoming, outgoing } - we want incoming requests
       setFriendRequests(res.data.incoming || []);
     } catch (err) {
       console.error('loadFriendRequests error:', err.response?.data || err.message || err);
@@ -55,7 +53,6 @@ const FriendsScreen = ({ navigation }) => {
       const response = await api.post('/friends/request/action', { requestId, action: 'accept' });
       console.log('Accept response:', response.data);
       Alert.alert('Friend request accepted');
-      // Refresh both lists
       loadFriends();
       loadFriendRequests();
     } catch (err) {
@@ -85,7 +82,6 @@ const FriendsScreen = ({ navigation }) => {
   const renderFriendRequest = ({ item }) => {
     console.log('Rendering friend request item:', item);
     
-    // Try different ways to get the user name
     const userName = item.from?.name || 
                     item.fromUser?.name || 
                     item.sender?.name || 

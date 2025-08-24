@@ -1,4 +1,3 @@
-// src/controllers/messageController.js
 import Message from '../models/Message.js';
 import { emitToUser } from '../socket/registry.js';
 
@@ -21,7 +20,6 @@ export const getThread = async (req, res) => {
   }
 };
 
-// Optional REST send for testing
 export const sendMessageRest = async (req, res) => {
   try {
     const { to, body } = req.body;

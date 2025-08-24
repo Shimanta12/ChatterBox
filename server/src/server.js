@@ -1,4 +1,3 @@
-// src/server.js
 import 'dotenv/config';
 import http from 'http';
 import express from 'express';
@@ -15,13 +14,11 @@ import { initSocket } from './socket/index.js';
 
 const app = express();
 
-// Security & logging
 app.use(helmet());
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(cors());
 
-// CORS: allow origins from CLIENT_ORIGIN (comma-separated) or default *
 const clientOrigin = process.env.CLIENT_ORIGIN?.split(',') || ['*'];
 app.use(cors({ origin: clientOrigin, credentials: true }));
 
@@ -32,7 +29,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/messages', messageRoutes);
 
-// HTTP server + Socket.IO
 const server = http.createServer(app);
 initSocket(server, clientOrigin);
 

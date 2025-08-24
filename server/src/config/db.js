@@ -22,7 +22,6 @@ export const connectDB = async () => {
 
   mongoose.connection.on('disconnected', () => console.warn('⚠️ MongoDB disconnected'));
 
-  // Graceful shutdown
   process.on('SIGINT', async () => {
     await mongoose.disconnect();
     console.log('🔌 MongoDB connection closed');

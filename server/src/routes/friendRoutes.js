@@ -1,4 +1,3 @@
-// src/routes/friendRoutes.js
 import { Router } from 'express';
 import { auth } from '../middleware/auth.js';
 import { sendRequest, listRequests, actOnRequest, listFriends } from '../controllers/friendController.js';
