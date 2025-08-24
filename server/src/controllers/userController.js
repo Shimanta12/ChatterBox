@@ -1,4 +1,3 @@
-// src/controllers/userController.js
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 
@@ -21,7 +20,6 @@ export const updateProfile = async (req, res) => {
     if (name) update.name = name.trim();
     if (avatar !== undefined) update.avatar = avatar;
     
-    // Handle password update
     if (password && password.trim() !== '') {
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(password.trim(), saltRounds);

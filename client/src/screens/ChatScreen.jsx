@@ -1,4 +1,3 @@
-// src/screens/ChatScreen.jsx
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, Button, FlatList, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import api from '../utils/api';
@@ -29,7 +28,6 @@ const ChatScreen = ({ route }) => {
       if (!socket) return;
 
       const onNew = (msg) => {
-        // push only relevant messages
         if (String(msg.from) === String(friendId) || String(msg.to) === String(friendId)) {
           setMessages((m) => [...m, msg]);
         }
@@ -50,11 +48,9 @@ const ChatScreen = ({ route }) => {
     const socket = getSocket();
     if (socket && socket.connected) {
       socket.emit('message:send', { to: friendId, body: text });
-      // optimistic add
       setMessages((m) => [...m, { _id: `tmp-${Date.now()}`, from: user._id || user.id, to: friendId, body: text, createdAt: new Date().toISOString(), delivered: false }]);
       setText('');
     } else {
-      // fallback REST
       try {
         const { data } = await api.post('/messages/send', { to: friendId, body: text });
         setMessages((m) => [...m, data]);

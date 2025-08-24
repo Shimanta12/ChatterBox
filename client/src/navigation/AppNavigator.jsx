@@ -1,4 +1,3 @@
-// src/navigation/AppNavigator.jsx
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -14,7 +13,7 @@ const Stack = createNativeStackNavigator();
 const AppStack = () => {
   const { user, loadingInitial } = useAuth();
 
-  if (loadingInitial) return null; // Or a splash/loading UI
+  if (loadingInitial) return null;
 
   return (
     <NavigationContainer>

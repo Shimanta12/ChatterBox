@@ -1,4 +1,3 @@
-// src/components/MessageBubble.jsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 

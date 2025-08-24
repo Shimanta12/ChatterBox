@@ -1,4 +1,3 @@
-// App.jsx
 import React from 'react';
 import AppNavigatorWrapper from './src/navigation/AppNavigator';
 

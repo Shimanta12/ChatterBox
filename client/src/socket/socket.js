@@ -1,4 +1,3 @@
-// src/socket/socket.js
 import { io } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -15,7 +14,6 @@ export const initSocket = async () => {
     autoConnect: true,
   });
 
-  // Optional debugging
   socket.on('connect', () => console.log('socket connected', socket.id));
   socket.on('disconnect', (reason) => console.log('socket disconnected', reason));
   socket.on('connect_error', (err) => console.warn('socket connect_error', err.message || err));

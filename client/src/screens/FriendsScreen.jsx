@@ -1,4 +1,3 @@
-// src/screens/FriendsScreen.jsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Button, Alert } from 'react-native';
 import api from '../utils/api';
@@ -25,7 +24,6 @@ const FriendsScreen = ({ navigation }) => {
       const res = await api.get('/friends/requests');
       console.log('Friend requests response:', res.data);
       
-      // Filter out requests from users who are already friends
       const friendIds = friends.map(f => f._id);
       const filteredRequests = (res.data.incoming || []).filter(request => 
         !friendIds.includes(request.from._id)
@@ -46,20 +44,15 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
-  // Helper function to check if user is already a friend
   const isFriend = (userId) => {
     return friends.some(friend => friend._id === userId);
   };
 
-  // Helper function to check if request already sent
   const hasOutgoingRequest = (userId) => {
-    // You might want to track outgoing requests too
-    // For now, we'll just check friends
-    return false; // This would need outgoing requests data
+    return false;
   };
 
   const sendRequest = async (toUserId) => {
-    // Check if already friends
     if (isFriend(toUserId)) {
       Alert.alert('Already Friends', 'This user is already in your friends list');
       return;
@@ -68,7 +61,6 @@ const FriendsScreen = ({ navigation }) => {
     try {
       await api.post('/friends/request', { toUserId });
       Alert.alert('Request sent');
-      // Optionally clear search results or mark as sent
       setResults(results.map(user => 
         user._id === toUserId 
           ? { ...user, requestSent: true }
@@ -85,7 +77,6 @@ const FriendsScreen = ({ navigation }) => {
       const response = await api.post('/friends/request/action', { requestId, action: 'accept' });
       console.log('Accept response:', response.data);
       Alert.alert('Friend request accepted');
-      // Refresh both lists
       loadFriends();
       loadFriendRequests();
     } catch (err) {
@@ -115,7 +106,6 @@ const FriendsScreen = ({ navigation }) => {
   const renderFriendRequest = ({ item }) => {
     console.log('Rendering friend request item:', item);
     
-    // Try different ways to get the user name
     const userName = item.from?.name || 
                     item.fromUser?.name || 
                     item.sender?.name || 

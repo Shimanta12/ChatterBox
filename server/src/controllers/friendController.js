@@ -1,4 +1,3 @@
-// src/controllers/friendController.js
 import FriendRequest from '../models/FriendRequest.js';
 import User from '../models/User.js';
 import { emitToUser } from '../socket/registry.js';
@@ -9,20 +8,17 @@ export const sendRequest = async (req, res) => {
     if (!toUserId) return res.status(400).json({ message: 'toUserId required' });
     if (String(toUserId) === String(req.userId)) return res.status(400).json({ message: 'Cannot add yourself' });
 
-    // Check duplicate or existing friendship
     const existing = await FriendRequest.findOne({ from: req.userId, to: toUserId });
     if (existing) return res.status(400).json({ message: 'Request already exists' });
 
     const doc = await FriendRequest.create({ from: req.userId, to: toUserId });
     const populated = await doc.populate('from', 'name email avatar').execPopulate?.() ?? await doc.populate('from', 'name email avatar');
 
-    // Notify recipient if online
     emitToUser(toUserId, 'friend:request:new', populated);
 
     res.json(populated);
   } catch (err) {
     console.error('sendRequest error', err);
-    // Unique index violation
     if (err?.code === 11000) return res.status(400).json({ message: 'Request already exists' });
     res.status(500).json({ message: 'Server error' });
   }
@@ -58,7 +54,6 @@ export const actOnRequest = async (req, res) => {
 
     const populated = await reqDoc.populate('from to', 'name email avatar').execPopulate?.() ?? await reqDoc.populate('from to', 'name email avatar');
 
-    // Notify requester
     emitToUser(reqDoc.from, 'friend:request:update', populated);
 
     res.json(populated);
