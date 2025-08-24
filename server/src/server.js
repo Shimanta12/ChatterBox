@@ -36,7 +36,7 @@ const PORT = process.env.PORT || 5000;
 
 connectDB()
   .then(() => {
-    server.listen(PORT, () => console.log(`🚀 Server listening on ${PORT}`));
+    server.listen(PORT, () => console.log(`Server listening on ${PORT}`));
   })
   .catch((err) => {
     console.error('Failed to start server:', err);

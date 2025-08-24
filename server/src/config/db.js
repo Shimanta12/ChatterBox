@@ -14,17 +14,17 @@ export const connectDB = async () => {
 
   try {
     await mongoose.connect(uri, opts);
-    console.log('✅ MongoDB connected');
+    console.log('MongoDB connected');
   } catch (err) {
-    console.error('❌ MongoDB error:', err.message);
+    console.error('MongoDB error:', err.message);
     process.exit(1);
   }
 
-  mongoose.connection.on('disconnected', () => console.warn('⚠️ MongoDB disconnected'));
+  mongoose.connection.on('disconnected', () => console.warn('MongoDB disconnected'));
 
   process.on('SIGINT', async () => {
     await mongoose.disconnect();
-    console.log('🔌 MongoDB connection closed');
+    console.log('MongoDB connection closed');
     process.exit(0);
   });
 };
