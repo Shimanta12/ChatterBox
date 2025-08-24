@@ -1,4 +1,5 @@
 // src/controllers/userController.js
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 
 export const me = async (req, res) => {
@@ -14,11 +15,25 @@ export const me = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { name, avatar } = req.body;
+    const { name, avatar, password } = req.body;
     const update = {};
+    
     if (name) update.name = name.trim();
     if (avatar !== undefined) update.avatar = avatar;
-    const user = await User.findByIdAndUpdate(req.userId, { $set: update }, { new: true }).select('-password');
+    
+    // Handle password update
+    if (password && password.trim() !== '') {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password.trim(), saltRounds);
+      update.password = hashedPassword;
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      req.userId, 
+      { $set: update }, 
+      { new: true }
+    ).select('-password');
+    
     res.json(user);
   } catch (err) {
     console.error('updateProfile error', err);
