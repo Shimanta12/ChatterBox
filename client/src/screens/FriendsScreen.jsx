@@ -24,8 +24,14 @@ const FriendsScreen = ({ navigation }) => {
     try {
       const res = await api.get('/friends/requests');
       console.log('Friend requests response:', res.data);
-      // Backend returns { incoming, outgoing } - we want incoming requests
-      setFriendRequests(res.data.incoming || []);
+      
+      // Filter out requests from users who are already friends
+      const friendIds = friends.map(f => f._id);
+      const filteredRequests = (res.data.incoming || []).filter(request => 
+        !friendIds.includes(request.from._id)
+      );
+      
+      setFriendRequests(filteredRequests);
     } catch (err) {
       console.error('loadFriendRequests error:', err.response?.data || err.message || err);
     }
@@ -40,10 +46,34 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
+  // Helper function to check if user is already a friend
+  const isFriend = (userId) => {
+    return friends.some(friend => friend._id === userId);
+  };
+
+  // Helper function to check if request already sent
+  const hasOutgoingRequest = (userId) => {
+    // You might want to track outgoing requests too
+    // For now, we'll just check friends
+    return false; // This would need outgoing requests data
+  };
+
   const sendRequest = async (toUserId) => {
+    // Check if already friends
+    if (isFriend(toUserId)) {
+      Alert.alert('Already Friends', 'This user is already in your friends list');
+      return;
+    }
+
     try {
       await api.post('/friends/request', { toUserId });
       Alert.alert('Request sent');
+      // Optionally clear search results or mark as sent
+      setResults(results.map(user => 
+        user._id === toUserId 
+          ? { ...user, requestSent: true }
+          : user
+      ));
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message || err.message || 'Error');
     }
@@ -139,14 +169,38 @@ const FriendsScreen = ({ navigation }) => {
           <FlatList
             data={results}
             keyExtractor={(i) => i._id}
-            renderItem={({ item }) => (
-              <View style={styles.row}>
-                <Text style={styles.name}>{item.name}</Text>
-                <TouchableOpacity style={styles.btn} onPress={() => sendRequest(item._id)}>
-                  <Text style={{ color: '#fff' }}>Add</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            renderItem={({ item }) => {
+              const isAlreadyFriend = isFriend(item._id);
+              const isCurrentUser = item._id === user?._id;
+              
+              return (
+                <View style={styles.row}>
+                  <View style={styles.nameContainer}>
+                    <Text style={styles.name}>{item.name}</Text>
+                    {isAlreadyFriend && (
+                      <Text style={styles.friendTag}>✓ Friend</Text>
+                    )}
+                    {isCurrentUser && (
+                      <Text style={styles.friendTag}>You</Text>
+                    )}
+                    {item.requestSent && !isAlreadyFriend && (
+                      <Text style={styles.sentTag}>Request Sent</Text>
+                    )}
+                  </View>
+                  {!isAlreadyFriend && !isCurrentUser && (
+                    <TouchableOpacity 
+                      style={[styles.btn, item.requestSent && styles.disabledBtn]} 
+                      onPress={() => sendRequest(item._id)}
+                      disabled={item.requestSent}
+                    >
+                      <Text style={{ color: '#fff' }}>
+                        {item.requestSent ? 'Sent' : 'Add'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            }}
             style={{ maxHeight: 150, marginBottom: 10 }}
           />
         </>
@@ -203,7 +257,13 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#4f8cff'
   },
-  name: { color: '#fff', flex: 1 },
+  name: { color: '#fff' },
+  nameContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
   btn: { backgroundColor: '#4f8cff', padding: 8, borderRadius: 8 },
   requestButtons: {
     flexDirection: 'row',
@@ -211,6 +271,20 @@ const styles = StyleSheet.create({
   },
   acceptBtn: {
     backgroundColor: '#4caf50'
+  },
+  friendTag: {
+    color: '#4caf50',
+    fontSize: 12,
+    fontWeight: 'bold'
+  },
+  sentTag: {
+    color: '#ffa726',
+    fontSize: 12,
+    fontStyle: 'italic'
+  },
+  disabledBtn: {
+    backgroundColor: '#666',
+    opacity: 0.7
   },
   requestInfo: { 
     color: '#aaa', 
