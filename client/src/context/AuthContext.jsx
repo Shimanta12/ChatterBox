@@ -45,6 +45,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => { restore(); }, []);
 
+  // Higher order component to make the auth state available all over the application.
   return (
     <AuthContext.Provider value={{ user, setUser, login, logout, loadingInitial }}>
       {children}
