@@ -24,10 +24,33 @@ export const initSocket = (httpServer, corsOrigin) => {
     onlineMap.set(socket.userId, socket.id);
     io.emit('presence:update', { userId: socket.userId, online: true });
 
-    socket.on('message:send', async ({ to, body }) => {
+    socket.on('message:send', async ({ to, body, messageType = 'text', audioUrl, audioDuration }) => {
       try {
         if (!to || !body) return;
-        const msg = await Message.create({ from: socket.userId, to, body, delivered: false });
+        
+        let msg;
+        if (messageType === 'voice' && audioUrl && audioDuration) {
+          // For voice messages sent via socket, we'll store the audio URL as provided
+          // In a production app, you might want to handle file uploads differently
+          msg = await Message.create({ 
+            from: socket.userId, 
+            to, 
+            body, 
+            messageType: 'voice',
+            audioUrl,
+            audioDuration: parseFloat(audioDuration),
+            delivered: false 
+          });
+        } else {
+          // Regular text message
+          msg = await Message.create({ 
+            from: socket.userId, 
+            to, 
+            body, 
+            messageType: messageType || 'text',
+            delivered: false 
+          });
+        }
 
         const toSid = onlineMap.get(String(to));
         if (toSid) {
@@ -61,7 +84,6 @@ export const initSocket = (httpServer, corsOrigin) => {
       if (!to) return;
       emitToUser(to, 'typing:stop', { from: socket.userId });
     });
-
 
     socket.on('disconnect', () => {
       onlineMap.delete(socket.userId);

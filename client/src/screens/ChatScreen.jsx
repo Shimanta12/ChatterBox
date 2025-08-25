@@ -3,6 +3,7 @@ import { View, TextInput, Button, FlatList, KeyboardAvoidingView, Platform, Styl
 import api from '../utils/api';
 import { initSocket, getSocket } from '../socket/socket';
 import MessageBubble from '../components/MessageBubble';
+import VoiceRecorder from '../components/VoiceRecorder';
 import { useAuth } from '../context/AuthContext';
 
 const ChatScreen = ({ route }) => {
@@ -10,6 +11,7 @@ const ChatScreen = ({ route }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
   const friendId = friend._id ?? friend.id;
 
   const loadThread = async () => {
@@ -47,17 +49,67 @@ const ChatScreen = ({ route }) => {
     if (!text.trim()) return;
     const socket = getSocket();
     if (socket && socket.connected) {
-      socket.emit('message:send', { to: friendId, body: text });
-      setMessages((m) => [...m, { _id: `tmp-${Date.now()}`, from: user._id || user.id, to: friendId, body: text, createdAt: new Date().toISOString(), delivered: false }]);
+      socket.emit('message:send', { to: friendId, body: text, messageType: 'text' });
+      setMessages((m) => [...m, { _id: `tmp-${Date.now()}`, from: user._id || user.id, to: friendId, body: text, messageType: 'text', createdAt: new Date().toISOString(), delivered: false }]);
       setText('');
     } else {
       try {
-        const { data } = await api.post('/messages/send', { to: friendId, body: text });
+        const { data } = await api.post('/messages/send', { to: friendId, body: text, messageType: 'text' });
         setMessages((m) => [...m, data]);
         setText('');
       } catch (err) {
         console.warn('sendMessage error', err.message || err);
       }
+    }
+  };
+
+  const sendVoiceMessage = async (audioFile, duration) => {
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('audio', {
+        uri: audioFile,
+        type: 'audio/m4a',
+        name: 'voice_message.m4a'
+      });
+      formData.append('to', friendId);
+      formData.append('duration', duration.toString());
+      formData.append('messageType', 'voice');
+
+      const socket = getSocket();
+      if (socket && socket.connected) {
+        // Send through socket for real-time
+        socket.emit('message:send', { 
+          to: friendId, 
+          body: 'Voice Message', 
+          messageType: 'voice',
+          audioUrl: audioFile,
+          audioDuration: duration
+        });
+        
+        // Add temporary message to UI
+        setMessages((m) => [...m, { 
+          _id: `tmp-${Date.now()}`, 
+          from: user._id || user.id, 
+          to: friendId, 
+          body: 'Voice Message', 
+          messageType: 'voice',
+          audioUrl: audioFile,
+          audioDuration: duration,
+          createdAt: new Date().toISOString(), 
+          delivered: false 
+        }]);
+      } else {
+        // Fallback to REST API
+        const { data } = await api.post('/messages/send-voice', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        setMessages((m) => [...m, data]);
+      }
+    } catch (err) {
+      console.warn('sendVoiceMessage error', err.message || err);
     }
   };
 
@@ -71,7 +123,18 @@ const ChatScreen = ({ route }) => {
           contentContainerStyle={{ padding: 12 }}
         />
         <View style={styles.row}>
-          <TextInput value={text} onChangeText={setText} placeholder="Type a message" style={styles.input} placeholderTextColor="#9aa0b4" />
+          <VoiceRecorder 
+            onSendVoice={sendVoiceMessage}
+            isRecording={isRecording}
+            setIsRecording={setIsRecording}
+          />
+          <TextInput 
+            value={text} 
+            onChangeText={setText} 
+            placeholder="Type a message" 
+            style={styles.input} 
+            placeholderTextColor="#9aa0b4" 
+          />
           <Button title="Send" onPress={sendMessage} />
         </View>
       </View>
