@@ -67,7 +67,17 @@ const ChatScreen = ({ route }) => {
         <FlatList
           data={messages}
           keyExtractor={(i) => i._id}
-          renderItem={({ item }) => <MessageBubble message={item} isMine={String(item.from) === String(user._id || user.id)} />}
+          renderItem={({ item }) => {
+            const isMine = String(item.from) === String(user._id || user.id);
+            const messageUser = isMine ? user : friend;
+            return (
+              <MessageBubble 
+                message={item} 
+                isMine={isMine} 
+                user={messageUser}
+              />
+            );
+          }}
           contentContainerStyle={{ padding: 12 }}
         />
         <View style={styles.row}>

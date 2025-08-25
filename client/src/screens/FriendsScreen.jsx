@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Button, Alert } from 'react-native';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import Avatar from '../components/Avatar';
 
 const FriendsScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
@@ -103,7 +104,7 @@ const FriendsScreen = ({ navigation }) => {
     loadFriendRequests();
   }, []);
 
-  const renderFriendRequest = ({ item }) => {
+    const renderFriendRequest = ({ item }) => {
     console.log('Rendering friend request item:', item);
     
     const userName = item.from?.name || 
@@ -111,9 +112,12 @@ const FriendsScreen = ({ navigation }) => {
                     item.sender?.name || 
                     `User ${item.from || 'Unknown'}`;
     
+    const requestUser = item.from || item.fromUser || item.sender;
+    
     return (
       <View style={styles.requestRow}>
-        <View>
+        <Avatar user={requestUser} size={40} style={styles.avatar} />
+        <View style={styles.requestInfo}>
           <Text style={styles.name}>{userName}</Text>
         </View>
         <View style={styles.requestButtons}>
@@ -123,7 +127,7 @@ const FriendsScreen = ({ navigation }) => {
           >
             <Text style={{ color: '#fff' }}>Accept</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.btn, styles.declineBtn]} 
             onPress={() => declineRequest(item._id)}
           >
@@ -165,6 +169,7 @@ const FriendsScreen = ({ navigation }) => {
               
               return (
                 <View style={styles.row}>
+                  <Avatar user={item} size={40} style={styles.avatar} />
                   <View style={styles.nameContainer}>
                     <Text style={styles.name}>{item.name}</Text>
                     {isAlreadyFriend && (
@@ -214,6 +219,7 @@ const FriendsScreen = ({ navigation }) => {
         keyExtractor={(i) => i._id}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('Chat', { friend: item })}>
+            <Avatar user={item} size={40} style={styles.avatar} />
             <Text style={styles.name}>{item.name}</Text>
           </TouchableOpacity>
         )}
@@ -233,8 +239,8 @@ const styles = StyleSheet.create({
     borderRadius: 8, 
     marginBottom: 8, 
     flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
+    alignItems: 'center',
+    gap: 12,
   },
   requestRow: {
     backgroundColor: '#121621',
@@ -253,6 +259,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between'
+  },
+  avatar: {
+    marginRight: 0,
+  },
+  requestInfo: {
+    flex: 1,
   },
   btn: { backgroundColor: '#4f8cff', padding: 8, borderRadius: 8 },
   requestButtons: {

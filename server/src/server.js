@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import friendRoutes from './routes/friendRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
+import avatarRoutes from './routes/avatarRoutes.js';
 import { initSocket } from './socket/index.js';
 
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/avatar', avatarRoutes);
 
 const server = http.createServer(app);
 initSocket(server, clientOrigin);

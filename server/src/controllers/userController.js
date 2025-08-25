@@ -14,11 +14,10 @@ export const me = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { name, avatar, password } = req.body;
+    const { name, password } = req.body;
     const update = {};
     
     if (name) update.name = name.trim();
-    if (avatar !== undefined) update.avatar = avatar;
     
     if (password && password.trim() !== '') {
       const saltRounds = 10;
