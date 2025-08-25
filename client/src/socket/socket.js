@@ -5,6 +5,7 @@ const SERVER = 'http://10.0.2.2:5000';
 
 let socket = null;
 
+// socket initialization and bug fix
 export const initSocket = async () => {
   if (socket && socket.connected) return socket;
   const token = await AsyncStorage.getItem('token');
