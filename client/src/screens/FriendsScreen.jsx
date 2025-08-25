@@ -9,10 +9,12 @@ const FriendsScreen = ({ navigation }) => {
   const [friendRequests, setFriendRequests] = useState([]);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [outgoingRequests, setOutgoingRequests] = useState([]);
 
   const loadFriends = async () => {
     try {
       const res = await api.get('/friends/list');
+      console.log('Friends loaded:', res.data);
       setFriends(res.data);
     } catch (err) {
       console.warn('loadFriends', err.message || err);
@@ -35,6 +37,22 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
+  const loadOutgoingRequests = async () => {
+    try {
+      const res = await api.get('/friends/requests');
+      console.log('Outgoing requests response:', res.data.outgoing);
+      
+      // Filter out any null or invalid requests
+      const validOutgoingRequests = (res.data.outgoing || []).filter(request => 
+        request && request.to // Only keep requests where 'to' is not null/undefined
+      );
+      
+      setOutgoingRequests(validOutgoingRequests);
+    } catch (err) {
+      console.warn('loadOutgoingRequests', err.message || err);
+    }
+  };
+
   const search = async () => {
     try {
       const res = await api.get('/users/search', { params: { q: query } });
@@ -49,7 +67,14 @@ const FriendsScreen = ({ navigation }) => {
   };
 
   const hasOutgoingRequest = (userId) => {
-    return false;
+    return outgoingRequests.some(request => {
+      // Handle cases where request.to might be null or undefined
+      if (!request.to) return false;
+      
+      // Handle both populated objects and direct IDs
+      const toId = typeof request.to === 'object' ? request.to._id : request.to;
+      return toId === userId;
+    });
   };
 
   const sendRequest = async (toUserId) => {
@@ -58,14 +83,24 @@ const FriendsScreen = ({ navigation }) => {
       return;
     }
 
+    if (hasOutgoingRequest(toUserId)) {
+      Alert.alert('Request Already Sent', 'You have already sent a friend request to this user');
+      return;
+    }
+
     try {
       await api.post('/friends/request', { toUserId });
       Alert.alert('Request sent');
+      
+      // Update search results to show "sent"
       setResults(results.map(user => 
         user._id === toUserId 
           ? { ...user, requestSent: true }
           : user
       ));
+      
+      // Refresh outgoing requests to keep data in sync
+      loadOutgoingRequests();
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message || err.message || 'Error');
     }
@@ -79,6 +114,7 @@ const FriendsScreen = ({ navigation }) => {
       Alert.alert('Friend request accepted');
       loadFriends();
       loadFriendRequests();
+      loadOutgoingRequests();
     } catch (err) {
       console.error('Accept request error:', err.response?.data || err.message);
       Alert.alert('Error', err.response?.data?.message || err.message || 'Error accepting request');
@@ -98,9 +134,66 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
+  const unfriendUser = async (friendId, friendName) => {
+    Alert.alert(
+      'Unfriend User',
+      `Are you sure you want to remove ${friendName} from your friends list?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Unfriend',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('=== UNFRIEND DEBUG ===');
+              console.log('User ID:', user?._id);
+              console.log('Friend ID to unfriend:', friendId);
+              console.log('API endpoint:', `/friends/unfriend/${friendId}`);
+              console.log('Authorization header:', api.defaults.headers.common['Authorization']);
+              
+              const response = await api.delete(`/friends/unfriend/${friendId}`);
+              console.log('Unfriend response:', response.data);
+              console.log('Unfriend status:', response.status);
+              
+              Alert.alert('Success', `${friendName} has been removed from your friends list`);
+              
+              // Refresh the friends list
+              await loadFriends();
+              await loadOutgoingRequests();
+              
+              // Also update search results if the unfriended user is in the results
+              setResults(results.map(user => 
+                user._id === friendId 
+                  ? { ...user, requestSent: false }
+                  : user
+              ));
+              
+              console.log('=== UNFRIEND COMPLETE ===');
+            } catch (err) {
+              console.error('=== UNFRIEND ERROR ===');
+              console.error('Error object:', err);
+              console.error('Error response:', err.response?.data);
+              console.error('Error status:', err.response?.status);
+              console.error('Error message:', err.message);
+              
+              Alert.alert(
+                'Error', 
+                err.response?.data?.message || err.message || 'Error removing friend'
+              );
+            }
+          }
+        }
+      ]
+    );
+  };
+
   useEffect(() => { 
     loadFriends();
     loadFriendRequests();
+    loadOutgoingRequests();
   }, []);
 
   const renderFriendRequest = ({ item }) => {
@@ -134,6 +227,34 @@ const FriendsScreen = ({ navigation }) => {
     );
   };
 
+  const renderFriend = ({ item }) => (
+    <View style={styles.friendRow}>
+      <TouchableOpacity 
+        style={styles.friendInfo}
+        onPress={() => navigation.navigate('Chat', { friend: item })}
+      >
+        <Text style={styles.name}>{item.name}</Text>
+      </TouchableOpacity>
+      <View style={styles.friendActions}>
+        <TouchableOpacity 
+          style={[styles.btn, styles.chatBtn]}
+          onPress={() => navigation.navigate('Chat', { friend: item })}
+        >
+          <Text style={{ color: '#fff', fontSize: 12 }}>Chat</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.btn, styles.unfriendBtn]}
+          onPress={() => {
+            console.log('Unfriend button pressed for:', item);
+            unfriendUser(item._id, item.name);
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 12 }}>Unfriend</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <View style={{ marginBottom: 12 }}>
@@ -162,6 +283,9 @@ const FriendsScreen = ({ navigation }) => {
             renderItem={({ item }) => {
               const isAlreadyFriend = isFriend(item._id);
               const isCurrentUser = item._id === user?._id;
+              const hasPendingRequest = hasOutgoingRequest(item._id);
+              const requestSentLocally = item.requestSent;
+              const showAsSent = hasPendingRequest || requestSentLocally;
               
               return (
                 <View style={styles.row}>
@@ -173,18 +297,18 @@ const FriendsScreen = ({ navigation }) => {
                     {isCurrentUser && (
                       <Text style={styles.friendTag}>You</Text>
                     )}
-                    {item.requestSent && !isAlreadyFriend && (
+                    {/* {showAsSent && !isAlreadyFriend && (
                       <Text style={styles.sentTag}>Request Sent</Text>
-                    )}
+                    )} */}
                   </View>
                   {!isAlreadyFriend && !isCurrentUser && (
                     <TouchableOpacity 
-                      style={[styles.btn, item.requestSent && styles.disabledBtn]} 
+                      style={[styles.btn, showAsSent && styles.disabledBtn]} 
                       onPress={() => sendRequest(item._id)}
-                      disabled={item.requestSent}
+                      disabled={showAsSent}
                     >
                       <Text style={{ color: '#fff' }}>
-                        {item.requestSent ? 'Sent' : 'Add'}
+                        {showAsSent ? 'Sent' : 'Add'}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -212,11 +336,7 @@ const FriendsScreen = ({ navigation }) => {
       <FlatList
         data={friends}
         keyExtractor={(i) => i._id}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('Chat', { friend: item })}>
-            <Text style={styles.name}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
+        renderItem={renderFriend}
       />
     </View>
   );
@@ -247,6 +367,23 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#4f8cff'
   },
+  friendRow: {
+    backgroundColor: '#121621',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  friendInfo: {
+    flex: 1,
+    marginRight: 12
+  },
+  friendActions: {
+    flexDirection: 'row',
+    gap: 8
+  },
   name: { color: '#fff' },
   nameContainer: {
     flex: 1,
@@ -254,13 +391,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between'
   },
-  btn: { backgroundColor: '#4f8cff', padding: 8, borderRadius: 8 },
+  btn: { backgroundColor: '#4f8cff', padding: 8, borderRadius: 8, minWidth: 60, alignItems: 'center' },
   requestButtons: {
     flexDirection: 'row',
     gap: 8
   },
   acceptBtn: {
     backgroundColor: '#4caf50'
+  },
+  chatBtn: {
+    backgroundColor: '#4f8cff'
+  },
+  unfriendBtn: {
+    backgroundColor: '#ff6b6b'
   },
   friendTag: {
     color: '#4caf50',

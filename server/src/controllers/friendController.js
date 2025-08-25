@@ -2,20 +2,66 @@ import FriendRequest from '../models/FriendRequest.js';
 import User from '../models/User.js';
 import { emitToUser } from '../socket/registry.js';
 
+export const unfriendUser = async (req, res) => {
+  try {
+    const { friendId } = req.params;
+    const userId = req.userId;
+    
+    console.log(`Unfriending: ${userId} -> ${friendId}`);
+    
+    // Remove from friends lists
+    await User.findByIdAndUpdate(userId, { $pull: { friends: friendId } });
+    await User.findByIdAndUpdate(friendId, { $pull: { friends: userId } });
+
+    // IMPORTANT: Clean up friend request records (both directions)
+    // Delete any friend requests between these users
+    const deletedRequests = await FriendRequest.deleteMany({
+      $or: [
+        { from: userId, to: friendId },
+        { from: friendId, to: userId }
+      ]
+    });
+
+    console.log(`Unfriended: ${userId} <-> ${friendId}, deleted ${deletedRequests.deletedCount} friend request records`);
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Unfriended successfully",
+      deletedRequests: deletedRequests.deletedCount 
+    });
+  } catch (error) {
+    console.error('Unfriend error:', error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 export const sendRequest = async (req, res) => {
   try {
     const { toUserId } = req.body;
     if (!toUserId) return res.status(400).json({ message: 'toUserId required' });
     if (String(toUserId) === String(req.userId)) return res.status(400).json({ message: 'Cannot add yourself' });
 
-    const existing = await FriendRequest.findOne({ from: req.userId, to: toUserId });
+    // Check for existing pending requests only (not accepted/rejected ones)
+    const existing = await FriendRequest.findOne({ 
+      from: req.userId, 
+      to: toUserId, 
+      status: 'pending' 
+    });
+    
     if (existing) return res.status(400).json({ message: 'Request already exists' });
 
-    const doc = await FriendRequest.create({ from: req.userId, to: toUserId });
+    // Also check if they're already friends
+    const user = await User.findById(req.userId);
+    if (user.friends && user.friends.includes(toUserId)) {
+      return res.status(400).json({ message: 'Already friends' });
+    }
+
+    const doc = await FriendRequest.create({ from: req.userId, to: toUserId, status: 'pending' });
     const populated = await doc.populate('from', 'name email avatar').execPopulate?.() ?? await doc.populate('from', 'name email avatar');
 
     emitToUser(toUserId, 'friend:request:new', populated);
 
+    console.log(`Friend request sent: ${req.userId} -> ${toUserId}`);
     res.json(populated);
   } catch (err) {
     console.error('sendRequest error', err);
@@ -50,6 +96,9 @@ export const actOnRequest = async (req, res) => {
     if (reqDoc.status === 'accepted') {
       await User.findByIdAndUpdate(reqDoc.from, { $addToSet: { friends: reqDoc.to } });
       await User.findByIdAndUpdate(reqDoc.to, { $addToSet: { friends: reqDoc.from } });
+      console.log(`Friend request accepted: ${reqDoc.from} <-> ${reqDoc.to}`);
+    } else {
+      console.log(`Friend request rejected: ${reqDoc.from} -> ${reqDoc.to}`);
     }
 
     const populated = await reqDoc.populate('from to', 'name email avatar').execPopulate?.() ?? await reqDoc.populate('from to', 'name email avatar');
