@@ -297,9 +297,6 @@ const FriendsScreen = ({ navigation }) => {
                     {isCurrentUser && (
                       <Text style={styles.friendTag}>You</Text>
                     )}
-                    {/* {showAsSent && !isAlreadyFriend && (
-                      <Text style={styles.sentTag}>Request Sent</Text>
-                    )} */}
                   </View>
                   {!isAlreadyFriend && !isCurrentUser && (
                     <TouchableOpacity 
